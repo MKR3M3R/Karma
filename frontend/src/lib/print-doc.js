@@ -159,7 +159,7 @@ ${css}</style></head>
     ${factLine ? `<div class="facts">${factLine}</div>` : ''}
   </header>
   ${body}
-  <div class="end keep">${esc(t('Made with openGym'))} · opengym.ch${credit ? `<div class="credit" lang="en" dir="ltr">${esc(credit)}</div>` : ''}</div>
+  <div class="end keep">${esc(t('Made with Karma'))} · opengym.ch${credit ? `<div class="credit" lang="en" dir="ltr">${esc(credit)}</div>` : ''}</div>
 </div></body></html>`
 }
 
@@ -214,7 +214,7 @@ function printInFrame(html) {
  * suggested PDF file; Android refuses a job without one.
  */
 export function printDocument(html, name) {
-  if (MOBILE) return printHtml(html, name || 'openGym', printOptions()).catch(err => {
+  if (MOBILE) return printHtml(html, name || 'Karma', printOptions()).catch(err => {
     // A dismissed sheet stays quiet. A phone with no print service at all (#991) says so: the
     // store comes in through a dynamic import, since plain Node tests load this file too.
     if (err?.code !== 'no-service') return

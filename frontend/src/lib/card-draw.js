@@ -122,7 +122,7 @@ export function drawBrand(ctx, { x, y, width, colors, family, size = 40, badge: 
   ctx.textAlign = 'left'
   ctx.font = `700 ${size}px ${family}`
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${(-size * 0.036).toFixed(2)}px`
-  const textW = ctx.measureText('openGym').width
+  const textW = ctx.measureText('Karma').width
   const lockW = markH * MARK_ASPECT + gap + textW
   let lx = x
   if (badge) {

@@ -417,7 +417,7 @@ function Shell() {
       {isOn(S, 'body') && <Route path="/measurements" element={<Measurements />} />}
       {/* The MCP connector's consent screen (api/oauth.js): an assistant sent the browser here. */}
       <Route path="/connect/:id" element={<Connect />} />
-      {/* Use your subscription: openGym as a connector in Claude, ChatGPT or Gemini (sub-connect-146). */}
+      {/* Use your subscription: Karma as a connector in Claude, ChatGPT or Gemini (sub-connect-146). */}
       <Route path="/assistants" element={<Assistants />} />
       <Route path="/settings" element={<SettingsRoute />} />
       <Route path="/settings/:page" element={<SettingsRoute />} />
@@ -466,7 +466,7 @@ function Shell() {
       {/* Seasonal decoration (lib/seasonal.js): nothing, and nothing loaded, out of season. Never
           over a running workout or the first-launch screens. */}
       {authed && !needsMobileOnboarding && !permSteps && <SeasonalLayer hidden={inWorkout || loc.pathname === '/workout'} />}
-      {/* Your year in openGym (components/WrappedEntry.jsx): nothing loaded until it is opened. */}
+      {/* Your year in Karma (components/WrappedEntry.jsx): nothing loaded until it is opened. */}
       {authed && isOn(S, 'motivation') && <WrappedLayer ready={setupDone} />}
     </>
   )
