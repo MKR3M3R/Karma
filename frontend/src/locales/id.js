@@ -5862,4 +5862,9 @@ export default {
   "Preview on": "Pratinjau di",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "sedikit lebih singkat",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "File itu bukan program latihan.",
+  "The programme has no exercises to import.": "Program tidak memiliki latihan untuk diimpor.",
+  "Couldn’t find an “Exercise” column in that CSV.": "Kolom “Exercise” tidak ditemukan di CSV itu.",
+  "{0} values were adjusted to fit the app’s limits.": "{0} nilai disesuaikan dengan batas aplikasi.",
 };
