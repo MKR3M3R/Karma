@@ -1,3 +1,4 @@
+import { mt } from '../lib/mobility-ui.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { scrollToTop } from '../lib/scroll-top.js'
 import { useNavigate } from 'react-router-dom'
@@ -898,6 +899,7 @@ export default function Stats() {
     workouts.length > 0 && <Row key="b" title={t('Structural balance')} subtitle={t('See which lift is holding back the rest.')} accessory="chevron" className="stats-link" onClick={() => nav('/structural-balance')} />,
     // Every note in one feed (views/Journal.jsx): workouts, sets, exercises, check-ins, days off.
     <Row key="j" title={t('Journal')} subtitle={t('Every note you wrote, in one place.')} accessory="chevron" className="stats-link" onClick={() => nav('/journal')} />,
+    <Row key="mob" title={t('Mobility')} subtitle={mt('subtitle')} accessory="chevron" className="stats-link" onClick={() => nav('/mobility')} />,
     <Row key="t" title={t('Tools')} subtitle={t('1RM table, RPE load, DOTS, BMI, body fat, pace.')} accessory="chevron" className="stats-link" onClick={() => nav('/tools')} />,
     storyMonth && <Row key="month" title={t('Your month')} value={storyMonth === todayISO().slice(0, 7) ? t('So far') : monthLabel(storyMonth)} accessory="chevron"
       className="stats-link month-story" onClick={() => openMonthStory(storyMonth)} />,
