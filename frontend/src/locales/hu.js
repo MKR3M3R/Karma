@@ -5900,4 +5900,9 @@ export default {
   "Preview on": "Előnézet itt",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "kicsit rövidebben",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "Ez a fájl nem edzésprogram.",
+  "The programme has no exercises to import.": "A programban nincs importálható gyakorlat.",
+  "Couldn’t find an “Exercise” column in that CSV.": "Nem található „Exercise” oszlop ebben a CSV-ben.",
+  "{0} values were adjusted to fit the app’s limits.": "{0} érték az app korlátaihoz lett igazítva.",
 }

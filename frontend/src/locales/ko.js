@@ -5897,4 +5897,9 @@ export default {
   "Preview on": "미리 볼 화면",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "조금 짧게",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "이 파일은 운동 프로그램이 아닙니다.",
+  "The programme has no exercises to import.": "가져올 운동이 프로그램에 없습니다.",
+  "Couldn’t find an “Exercise” column in that CSV.": "해당 CSV에서 “Exercise” 열을 찾지 못했습니다.",
+  "{0} values were adjusted to fit the app’s limits.": "값 {0}개를 앱의 한도에 맞게 조정했습니다.",
 }

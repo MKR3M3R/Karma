@@ -5901,4 +5901,9 @@ export default {
   "Preview on": "Предпросмотр на",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "чуть покороче",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "Этот файл не является программой тренировок.",
+  "The programme has no exercises to import.": "В программе нет упражнений для импорта.",
+  "Couldn’t find an “Exercise” column in that CSV.": "В этом CSV не найден столбец «Exercise».",
+  "{0} values were adjusted to fit the app’s limits.": "Значений изменено под ограничения приложения: {0}.",
 }

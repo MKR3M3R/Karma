@@ -5863,4 +5863,9 @@ export default {
   "Preview on": "Náhled na",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "kratší",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "Tento soubor není tréninkový program.",
+  "The programme has no exercises to import.": "Program neobsahuje žádné cviky k importu.",
+  "Couldn’t find an “Exercise” column in that CSV.": "V tomto CSV chybí sloupec „Exercise“.",
+  "{0} values were adjusted to fit the app’s limits.": "Hodnoty ({0}) byly upraveny podle limitů aplikace.",
 }
