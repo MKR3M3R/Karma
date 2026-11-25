@@ -5976,4 +5976,9 @@ export default {
   "Preview on": "প্রিভিউ দেখুন",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "একটু কম সময়",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "ফাইলটি কোনো ট্রেনিং প্রোগ্রাম নয়।",
+  "The programme has no exercises to import.": "প্রোগ্রামে ইমপোর্ট করার মতো কোনো ব্যায়াম নেই।",
+  "Couldn’t find an “Exercise” column in that CSV.": "ওই CSV-তে “Exercise” নামের কলাম পাওয়া যায়নি।",
+  "{0} values were adjusted to fit the app’s limits.": "অ্যাপের সীমার মধ্যে আনতে {0}টি মান সংশোধন করা হয়েছে।",
 }

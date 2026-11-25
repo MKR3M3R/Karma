@@ -189,7 +189,7 @@ export default function Plan() {
         <button className="iconbtn" data-tour="plan-menu" onClick={openMenu} aria-label={t('Plan options')} title={t('Plan options')}><Icon name="share" /></button>
       </div>
     </div>
-    <input ref={fileRef} type="file" accept="application/json,.json" onChange={pickFile} hidden />
+    <input ref={fileRef} type="file" accept="application/json,.json,text/csv,.csv" onChange={pickFile} hidden />
     <Segmented className="plan-views" tour="plan-views" value={view} onChange={setView}
       options={[{ value: 'schedule', label: t('Schedule') }, { value: 'routines', label: t('Routines') }]} />
     {progChip && <button type="button" className="prog-strip" onClick={() => nav('/plan/programmes')}>

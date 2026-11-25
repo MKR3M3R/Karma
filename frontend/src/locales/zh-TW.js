@@ -5890,4 +5890,9 @@ export default {
   "Preview on": "預覽位置",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "縮短一點",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "這個檔案不是訓練計畫。",
+  "The programme has no exercises to import.": "這個計畫沒有可匯入的動作。",
+  "Couldn’t find an “Exercise” column in that CSV.": "在該 CSV 中找不到「Exercise」欄位。",
+  "{0} values were adjusted to fit the app’s limits.": "已將 {0} 個數值調整到應用程式的限制內。",
 }

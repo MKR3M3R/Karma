@@ -4326,6 +4326,11 @@ export const PT_BR_OVERRIDES = {
   "iOS ends it after 8 hours, and a swipe removes it. It comes back with your next set.": "O iOS encerra depois de 8 horas, e um deslize remove. Volta com sua próxima série.",
   "Android Settings, Apps, Karma, Notifications.": "Configurações do Android, Apps, Karma, Notificações.",
   "Follows the main page. Switch this on to pick the details and buttons for this type yourself.": "Segue a página principal. Ative isto para escolher você mesmo os detalhes e os botões deste tipo.",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "Esse arquivo não é um programa de treino.",
+  "The programme has no exercises to import.": "O programa não tem exercícios para importar.",
+  "Couldn’t find an “Exercise” column in that CSV.": "Não encontrei uma coluna “Exercise” nesse CSV.",
+  "{0} values were adjusted to fit the app’s limits.": "{0} valores foram ajustados aos limites do app.",
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

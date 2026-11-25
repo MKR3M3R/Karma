@@ -5908,4 +5908,9 @@ export default {
   "Preview on": "ดูตัวอย่างบน",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "สั้นลงหน่อย",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "ไฟล์นี้ไม่ใช่โปรแกรมการฝึก",
+  "The programme has no exercises to import.": "โปรแกรมนี้ไม่มีท่าออกกำลังกายให้นำเข้า",
+  "Couldn’t find an “Exercise” column in that CSV.": "ไม่พบคอลัมน์ “Exercise” ใน CSV นั้น",
+  "{0} values were adjusted to fit the app’s limits.": "ปรับค่า {0} รายการให้อยู่ในขีดจำกัดของแอป",
 }

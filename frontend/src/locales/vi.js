@@ -5863,4 +5863,9 @@ export default {
   "Preview on": "Xem trước trên",
   // 1.4.5 UX round, P2: timed holds in the finish summary (next hold is shorter)
   "shorter": "ngắn hơn",
+  // Programme file import (JSON or CSV from the Plan menu)
+  "That file isn’t a training programme.": "Tệp này không phải là chương trình tập luyện.",
+  "The programme has no exercises to import.": "Chương trình không có bài tập nào để nhập.",
+  "Couldn’t find an “Exercise” column in that CSV.": "Không tìm thấy cột “Exercise” trong CSV đó.",
+  "{0} values were adjusted to fit the app’s limits.": "Đã điều chỉnh {0} giá trị theo giới hạn của ứng dụng.",
 };

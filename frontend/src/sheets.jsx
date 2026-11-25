@@ -71,6 +71,7 @@ import { importHevyData, parseHevyAccount, HevyApiError, HEVY_DEV_SETTINGS, merg
 import { aliasMatches, choiceOpts, combineNames, rememberPicks } from './lib/import-choices.js'
 import ImportChoices, { freshChoices, choicesChanged } from './components/ImportChoices.jsx'
 import { buildPlanBundle, buildProgrammeBundle, parsePlan, mergePlan } from './lib/plan-share.js'
+import { readProgramJSON, readProgramCSV } from './lib/program-file.js'
 import PrintPlanSheet from './components/PrintPlanSheet.jsx'
 import { printWorkout } from './lib/report-print.js'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP, formulaOf, FORMULA_NAMES } from './lib/onerm.js'
@@ -3324,11 +3325,44 @@ export async function exportProgrammeFile(id) {
 export const printPlanSheet = ({ routineId, name } = {}) =>
   ui().openSheet(close => <PrintPlanSheet routineId={routineId} name={name} close={close} />)
 export const printWholePlan = () => printPlanSheet()
+// What a refused programme file says (lib/program-file.js reports codes, never sentences).
+// A refusal can carry several errors (a nameless exercise, then the empty day it leaves); the first
+// one that has a sentence of its own is the one shown.
+const programProblem = issues => {
+  const said = {
+    'not-program': () => t('That file isn’t a training programme.'),
+    'no-days': () => t('The programme has no exercises to import.'),
+    'day-empty': () => t('The programme has no exercises to import.'),
+    'csv-no-exercise': () => t('Couldn’t find an “Exercise” column in that CSV.'),
+  }
+  const hit = issues.find(i => i.level === 'error' && said[i.code])
+  return hit ? said[hit.code]() : t('Couldn’t read that file.')
+}
+
+// A programme file (training_program JSON, or a CSV with a row per exercise) read as a plan, or
+// null when the text is something else (a plan file, which parsePlan reads). The result goes to
+// the same import sheet, so it is previewed first and only ever adds routines.
+function readProgramFile(f, text) {
+  if (/\.csv$/i.test(f.name || '')) return readProgramCSV(text, { unit: S().unit || 'kg' })
+  let data
+  try { data = JSON.parse(text.replace(/^\uFEFF/, '')) } catch { return null }
+  return data && data.type === 'training_program' ? readProgramJSON(data, { unit: S().unit || 'kg' }) : null
+}
+
 // A picked plan file → the import sheet, or a toast saying why not.
 export function importPlanFile(f, onRead) {
   if (!f) return
   const rd = new FileReader()
   rd.onload = () => {
+    const program = readProgramFile(f, String(rd.result))
+    if (program) {
+      if (!program.ok) { toast(programProblem(program.issues)); return }
+      onRead?.()
+      planImportSheet(parsePlan(program.bundle, S().unit || 'kg'))
+      const adjusted = program.issues.filter(i => i.level === 'warn').length
+      if (adjusted) toast(t('{0} values were adjusted to fit the app’s limits.', adjusted))
+      return
+    }
     try { const bundle = parsePlan(rd.result, S().unit || 'kg'); onRead?.(); planImportSheet(bundle) }
     // parsePlan's own refusal is written for people; anything else is not shown raw.
     catch (e) { toast(e?.code === 'not-plan' ? t('Import failed: {0}', e.message) : t('Couldn’t read that file.')) }
