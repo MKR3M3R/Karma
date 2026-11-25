@@ -49,7 +49,7 @@ const S0 = () => ({ unit: 'kg', restSec: 90, workouts: [], routines: clone(ROUTI
 function world (S = S0()) {
   const w = {
     inRange: true,        // Bluetooth between the watch and the phone
-    alive: false,         // openGym's process on the phone: GarminLink only hears while it lives
+    alive: false,         // Karma's process on the phone: GarminLink only hears while it lives
     swallow: 0,           // transmits that never call back at all
     ackFails: 0,          // the page's ack to the queue file fails (the app died right then)
     queue: [],            // the queue file: survives the process
@@ -126,7 +126,7 @@ function world (S = S0()) {
       setTimeout(() => {
         if (!w.inRange) return l.onError()
         l.onComplete()                 // Garmin Connect took it …
-        if (w.alive) onMessage(copy)   // … and only a living openGym hears it
+        if (w.alive) onMessage(copy)   // … and only a living Karma hears it
       }, 300)
     },
   }
@@ -206,7 +206,7 @@ beforeEach(() => { localStorage.clear(); _resetWatchSync(); vi.useFakeTimers(); 
 afterEach(() => { _resetWatchSync(); vi.useRealTimers() })
 
 describe('pairing: the first hello', () => {
-  it('a watch app opened next to a running openGym gets today\'s routine at once', async () => {
+  it('a watch app opened next to a running Karma gets today\'s routine at once', async () => {
     const w = world()
     expect(w.watch.s.sy).toBe(false)
     await w.launch()
@@ -223,7 +223,7 @@ describe('pairing: the first hello', () => {
     expect(w.queue).toEqual([])
   })
 
-  it('openGym not running: the hello goes nowhere, and the watch asks again until it is heard', async () => {
+  it('Karma not running: the hello goes nowhere, and the watch asks again until it is heard', async () => {
     const w = world()
     await w.run(5)
     expect(w.watch.s.sy).toBe(false)
@@ -243,7 +243,7 @@ describe('pairing: the first hello', () => {
     expect(w.transmits.length).toBe(3)   // answered: no more asking
   })
 
-  it('a phone that never answers (no openGym with the Garmin link on it) does not cost the watch its battery', async () => {
+  it('a phone that never answers (no Karma with the Garmin link on it) does not cost the watch its battery', async () => {
     const w = world()
     // a workout's worth of sets that Garmin Connect took and nobody heard
     for (let i = 0; i < 20; i++) w.watch.send({ id: 'x' + i, type: 'setDone', wid: 'w', exId: 'e' + i, setIdx: 0, at: Date.now() })
@@ -434,7 +434,7 @@ describe('either side restarting', () => {
     expect(w.watch.s.ob).toEqual([])
   })
 
-  it('openGym killed on the phone while the watch logs: Garmin Connect takes the sets, nobody hears, they come again', async () => {
+  it('Karma killed on the phone while the watch logs: Garmin Connect takes the sets, nobody hears, they come again', async () => {
     const w = world()
     await w.launch()
     w.startOnPhone()
@@ -458,7 +458,7 @@ describe('either side restarting', () => {
     expect(w.watch.s.ob).toEqual([])
   })
 
-  it('openGym killed mid-drain, after applying and before the queue file heard: not applied a second time', async () => {
+  it('Karma killed mid-drain, after applying and before the queue file heard: not applied a second time', async () => {
     const w = world()
     await w.launch()
     w.startOnPhone()
