@@ -71,7 +71,8 @@ import { importHevyData, parseHevyAccount, HevyApiError, HEVY_DEV_SETTINGS, merg
 import { aliasMatches, choiceOpts, combineNames, rememberPicks } from './lib/import-choices.js'
 import ImportChoices, { freshChoices, choicesChanged } from './components/ImportChoices.jsx'
 import { buildPlanBundle, buildProgrammeBundle, parsePlan, mergePlan } from './lib/plan-share.js'
-import { readProgramJSON, readProgramCSV } from './lib/program-file.js'
+import { readProgramJSON, readProgramCSV, buildProgramFile, buildProgramCSV } from './lib/program-file.js'
+import { pt as programText, MAP_FIELDS } from './lib/program-ui.js'
 import PrintPlanSheet from './components/PrintPlanSheet.jsx'
 import { printWorkout } from './lib/report-print.js'
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP, formulaOf, FORMULA_NAMES } from './lib/onerm.js'
@@ -3318,6 +3319,19 @@ export async function exportProgrammeFile(id) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
   toast(t('Programme file saved. Send it to a friend!'))
 }
+// The plan's routines as a training_program file (lib/program-file.js), JSON or CSV: the shape
+// the import above reads back, and other tools can read.
+export async function exportProgramFile(format = 'json') {
+  const st = S(), user = useStore.getState().user
+  const nameOf = id => exerciseNameText(exOr(id))
+  const label = user?.name ? t('{0}’s plan', user.name) : ''
+  const text = format === 'csv' ? buildProgramCSV(st.routines, nameOf) : buildProgramFile(st.routines, nameOf, { name: label })
+  const name = 'karma-program-' + todayISO() + (format === 'csv' ? '.csv' : '.json')
+  if (MOBILE) { try { await shareExport(text, name) } catch (e) { /* dismissed */ } return }
+  const blob = new Blob([text], { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
+  toast(programText('saved'))
+}
 // The print step (components/PrintPlanSheet.jsx): "With pictures", then the browser's print
 // dialog (→ Save as PDF) on the web or the OS print flow via the native Print plugin in the app
 // (Android's WebView has no window.print()). Same printable HTML both ways. Without `routineId`
@@ -3356,7 +3370,11 @@ export function importPlanFile(f, onRead) {
   rd.onload = () => {
     const program = readProgramFile(f, String(rd.result))
     if (program) {
-      if (!program.ok) { toast(programProblem(program.issues)); return }
+      if (!program.ok) {
+        // A CSV whose columns were not recognised: let the person match them, once.
+        if (program.header && program.issues.some(i => i.code === 'csv-no-exercise')) { csvMapSheet(String(rd.result), program, onRead); return }
+        toast(programProblem(program.issues)); return
+      }
       onRead?.()
       planImportSheet(parsePlan(program.bundle, S().unit || 'kg'))
       const adjusted = program.issues.filter(i => i.level === 'warn').length
@@ -3369,6 +3387,38 @@ export function importPlanFile(f, onRead) {
   }
   rd.readAsText(f)
 }
+
+// "Match your columns": the CSV's header row against the programme's fields. Only Exercise is
+// required; the rest may be "not in my file". The choice goes through the same reader and the
+// same preview as any other file.
+function CsvMap({ text, program, onRead, close }) {
+  const header = program.header.map(h => String(h || '').trim())
+  const [map, setMap] = useState(() => ({ ...(program.columns?.fields || {}) }))
+  const [err, setErr] = useState('')
+  const options = [{ value: -1, label: programText('notInFile') }, ...header.map((h, i) => ({ value: i, label: h || programText('column', i + 1) }))]
+  const go = () => {
+    if (!(map.exercise >= 0)) { setErr(programText('needExercise')); return }
+    const fields = Object.fromEntries(Object.entries(map).filter(([, v]) => v >= 0))
+    const r = readProgramCSV(text, { unit: S().unit || 'kg', map: fields })
+    if (!r.ok) { setErr(programProblem(r.issues)); return }
+    close(); onRead?.()
+    planImportSheet(parsePlan(r.bundle, S().unit || 'kg'))
+    const adjusted = r.issues.filter(i => i.level === 'warn').length
+    if (adjusted) toast(t('{0} values were adjusted to fit the app’s limits.', adjusted))
+  }
+  return <>
+    <h3>{programText('mapTitle')}</h3>
+    <div className="muted small" style={{ marginBottom: 10 }}>{programText('mapHint')}</div>
+    {MAP_FIELDS.map(f => <SelectRow key={f} title={programText('f_' + f)} value={map[f] >= 0 ? map[f] : -1} options={options}
+      onChange={v => { setErr(''); setMap(m => ({ ...m, [f]: v })) }} />)}
+    {err && <div role="alert" className="small" style={{ margin: '10px 0', color: 'var(--red, #c0392b)' }}>{err}</div>}
+    <div className="row" style={{ gap: 8, marginTop: 14 }}>
+      <Button variant="primary" onClick={go}>{programText('continue')}</Button>
+      <Button variant="ghost" className="dim" onClick={close}>{programText('cancel')}</Button>
+    </div>
+  </>
+}
+const csvMapSheet = (text, program, onRead) => ui().openSheet(close => <CsvMap text={text} program={program} onRead={onRead} close={close} />)
 
 export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
 

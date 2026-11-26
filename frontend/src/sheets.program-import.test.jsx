@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { importPlanFile } from './sheets.jsx'
+import { bindUI } from './components/ui.jsx'
 
 const clone = v => JSON.parse(JSON.stringify(v))
 const mounted = []
@@ -34,6 +35,7 @@ const program = {
 }
 
 beforeEach(() => {
+  bindUI(useUI)
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   useUI.setState({ sheets: [], toastMsg: '' })
   document.body.innerHTML = ''
@@ -78,12 +80,37 @@ describe('importing a programme file from the Plan menu', () => {
     expect(useUI.getState().toastMsg).toBe('1 values were adjusted to fit the app’s limits.')
   })
 
-  it('refuses a CSV with no exercise column, and adds nothing', async () => {
+  it('a CSV whose columns are not recognised asks to match them, and adds nothing yet', async () => {
     pick('a,b\nx,y\n', 'ficha.csv')
-    await toastShown()
-    expect(useUI.getState().toastMsg).toBe('Couldn’t find an “Exercise” column in that CSV.')
-    expect(useUI.getState().sheets).toHaveLength(0)
+    await sheetOpened()
+    const host = renderTop()
+    expect(host.textContent).toContain('Match your columns')
+    // Exercise is the only required column: continuing without it says so and adds nothing.
+    act(() => { buttonFor(host, 'Continue').click() })
+    expect(host.textContent).toContain('Pick the Exercise column to continue.')
     expect(useStore.getState().S.routines).toHaveLength(1)
+  })
+
+  it('matching the columns reads the file, previews it, and adds it as new routines', async () => {
+    pick('Movimento,Qtd,Grupo\nBarbell Bench Press,4,A\nBarbell Curl,3,A\n', 'ficha.csv')
+    await sheetOpened()
+    const host = renderTop()
+    const pickColumn = (field, column) => {
+      act(() => { [...host.querySelectorAll('button')].find(b => b.textContent.startsWith(field)).click() })
+      const sheet = renderTop()
+      act(() => { [...sheet.querySelectorAll('button, .item')].find(b => b.textContent.trim() === column).click() })
+    }
+    pickColumn('Exercise', 'Movimento')
+    pickColumn('Sets', 'Qtd')
+    act(() => { buttonFor(host, 'Continue').click() })
+    await vi.waitFor(() => expect(useUI.getState().sheets.at(-1)).toBeTruthy())
+    const preview = renderTop()
+    expect(preview.textContent).toContain('Add to my plan')
+    act(() => { buttonFor(preview, 'Add to my plan').click() })
+    const S = useStore.getState().S
+    expect(S.routines).toHaveLength(2)
+    expect(S.routines[1].ex).toHaveLength(2)
+    expect(S.routines[1].ex[0].sets).toBe(4)
   })
 
   it('a programme with no usable exercise is refused', async () => {

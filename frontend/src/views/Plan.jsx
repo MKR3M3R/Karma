@@ -1,3 +1,4 @@
+import { pt as programText } from '../lib/program-ui.js'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -7,7 +8,7 @@ import { t } from '../lib/i18n.js'
 import { nameIn, said } from '../lib/a11y-name.js'
 import {
   dayAssignSheet, starterPlanSheet, confirmSheet, menuSheet,
-  planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
+  planHasRoutines, exportPlanFile, exportProgramFile, printWholePlan, importPlanFile,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import EmptyState from '../components/EmptyState.jsx'
@@ -165,6 +166,8 @@ export default function Plan() {
       subtitle: has ? null : t('Add an exercise to a routine first. An empty plan has nothing to share.'),
       items: [
         { icon: 'share', label: t('Export plan file'), sub: t('A small file a friend can import into their own Karma. Routines only, none of your workouts or weigh-ins.'), disabled: !has, onClick: exportPlanFile },
+        { icon: 'share', label: programText('exportJson'), sub: programText('exportSub'), disabled: !has, onClick: () => exportProgramFile('json') },
+        { icon: 'download', label: programText('exportCsv'), disabled: !has, onClick: () => exportProgramFile('csv') },
         { icon: 'note', label: t('Print / Save as PDF'), disabled: !has, onClick: printWholePlan },
         { icon: 'download', label: t('Import a plan file'), onClick: () => fileRef.current?.click() },
         { icon: 'qr', label: t('Scan a QR code'), sub: t('A routine from a friend’s phone, the website or the poster by the squat rack.'), onClick: () => import('../components/ScanCode.jsx').then(m => m.scanQrCode()) },

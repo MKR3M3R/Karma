@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readProgramJSON, readProgramCSV, validateProgram, parseRepRange, csvColumns, buildProgramFile, LIMITS } from './program-file.js'
+import { readProgramJSON, readProgramCSV, validateProgram, parseRepRange, csvColumns, buildProgramFile, buildProgramCSV, csvToProgram, LIMITS } from './program-file.js'
 import { parsePlan, mergePlan } from './plan-share.js'
 
 const file = days => ({ schema_version: '1.0', type: 'training_program', program: { name: 'Base', goal: 'hipertrofia', level: 'intermediario', days } })
@@ -144,5 +144,43 @@ describe('buildProgramFile', () => {
     expect(ex[0]).toMatchObject({ name: 'Barbell Bench Press', sets: 4, reps: 12, repsMin: 8, restSec: 90, weight: 40, note: 'n' })
     expect(ex[1]).toMatchObject({ name: 'Plank', mode: 'time', sec: 45 })
     expect(ex[0].group).toBe(ex[2].group)
+  })
+})
+
+describe('programme export round trips', () => {
+  const routines = [
+    { name: 'Push, heavy', ex: [
+      { id: 'a', sets: 4, reps: 8, repsMin: 6, restSec: 120, weight: 60, note: 'slow "eccentric"', sg: 1 },
+      { id: 'b', sets: 3, reps: 12, weight: 0 },
+    ] },
+    { name: 'Core', ex: [{ id: 'c', sets: 3, mode: 'time', sec: 45 }] },
+    { name: 'Empty', ex: [] },
+  ]
+  const nameOf = id => ({ a: 'Bench press', b: 'Fly', c: 'Plank' })[id]
+  const clean = days => days.map(d => ({ name: d.name, exercises: d.exercises.map(e => Object.fromEntries(Object.entries(e).filter(([, v]) => v != null).map(([k, v]) => [k, k === 'reps' ? String(v) : v]))) }))
+
+  it('writes a header and one row per exercise, quoting what needs it, skipping empty routines', () => {
+    const lines = buildProgramCSV(routines, nameOf).trim().split('\n')
+    expect(lines[0]).toBe('Day,Exercise,Sets,Reps,Rest,Load,Notes,Superset,Seconds')
+    expect(lines).toHaveLength(4)
+    expect(lines[1]).toBe('"Push, heavy",Bench press,4,6-8,120,60,"slow ""eccentric""",1,')
+  })
+  it('reads back to the same programme as the JSON file holds', () => {
+    const fromCsv = csvToProgram(buildProgramCSV(routines, nameOf))
+    expect(fromCsv.ok).toBe(true)
+    const fromJson = JSON.parse(buildProgramFile(routines, nameOf)).program.days
+    expect(clean(fromCsv.data.program.days)).toEqual(clean(fromJson))
+  })
+  it('an exported CSV imports without asking for a column map', () => {
+    const r = readProgramCSV(buildProgramCSV(routines, nameOf))
+    expect(r.ok).toBe(true)
+    expect(r.bundle.routines).toHaveLength(2)
+  })
+  it('a file with unusual headers can be read with a column map', () => {
+    const text = 'Movimento;Qtd\nSupino;4\n'
+    expect(csvToProgram(text.replace(/;/g, ',')).ok).toBe(false)
+    const r = csvToProgram('Movimento,Qtd\nSupino,4\n', { map: { exercise: 0, sets: 1 } })
+    expect(r.ok).toBe(true)
+    expect(r.data.program.days[0].exercises[0]).toEqual({ name: 'Supino', sets: 4 })
   })
 })
