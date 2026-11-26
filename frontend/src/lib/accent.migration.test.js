@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// 1.4.5: the app takes on the logo's green (#a3e635). A profile started from nothing wears it; a
+// New profiles use Karma purple. A profile started from nothing wears it; a
 // profile that already exists keeps exactly the accent it had, whichever way its copy reaches the
 // app: the browser's saved copy, the phone's file mirror, a server pull, a sign-in, a backup, a
 // merge with another device, an older app on the other end. The rule is the one weighIn and
@@ -22,16 +22,16 @@ const blank = () => ({ workouts: [], routines: [], bodyweight: [], customEx: [] 
 const KEY = 'gym_state_v1'
 
 describe('the two defaults', () => {
-  it('a new profile gets the brand green, everything that never picked keeps the old one', () => {
-    expect(NEW_ACCENT).toBe('brand')
+  it('a new profile gets Karma purple, everything that never picked keeps the old one', () => {
+    expect(NEW_ACCENT).toBe('violet')
     expect(DEFAULT_ACCENT).toBe('lime')
     expect(ACCENTS.brand).toBe('#a3e635')
     expect(ACCENTS.lime).toBe('#30d158')
     expect(DEF.accent).toBe('lime')
   })
-  it('the brand green comes first in the picker, the old one stays as Classic green', () => {
-    expect(Object.keys(ACCENTS)[0]).toBe('brand')
-    expect(Object.keys(ACCENTS)[1]).toBe('lime')
+  it('Purple comes first in the picker, existing greens stay available', () => {
+    expect(Object.keys(ACCENTS)[0]).toBe('violet')
+    expect(Object.keys(ACCENTS)[1]).toBe('brand')
     expect(ACCENT_NAMES.brand).toBe('Karma green')
     expect(ACCENT_NAMES.lime).toBe('Classic green')
     expect(Object.keys(ACCENT_NAMES)).toEqual(Object.keys(ACCENTS))
@@ -40,10 +40,10 @@ describe('the two defaults', () => {
 })
 
 describe('a fresh install (no data at all)', () => {
-  it('freshState and a start over wear the brand green', () => {
-    expect(freshState().accent).toBe('brand')
-    expect(accentValue(freshState())).toBe('brand')
-    expect(restartedState({ lang: 'de', accent: 'sky' }).accent).toBe('brand')
+  it('freshState and a start over wear Karma purple', () => {
+    expect(freshState().accent).toBe('violet')
+    expect(accentValue(freshState())).toBe('violet')
+    expect(restartedState({ lang: 'de', accent: 'sky' }).accent).toBe('violet')
   })
 })
 
@@ -52,8 +52,8 @@ describe('a copy saved on this device before 1.4.5', () => {
   afterEach(() => localStorage.clear())
   const boot = async () => (await import('../store/useStore.js')).useStore.getState().S
 
-  it('nothing saved: the brand green', async () => {
-    expect((await boot()).accent).toBe('brand')
+  it('nothing saved: Karma purple', async () => {
+    expect((await boot()).accent).toBe('violet')
   })
   it('saved without an accent (from before accents existed): the old green', async () => {
     localStorage.setItem(KEY, JSON.stringify({ unit: 'kg', workouts: [{ id: 'w1' }], routines: [] }))
@@ -124,22 +124,22 @@ describe('a copy that arrives from elsewhere', () => {
 
 describe('a backup imported on this device', () => {
   afterEach(() => { localStorage.clear(); useStore.setState({ S: clone(DEF), user: null, ready: false }) })
-  it('a backup from before 1.4.5 keeps its old green, a fresh one its brand green', () => {
+  it('a backup from before 1.4.5 keeps its old green, a fresh one keeps purple', () => {
     useStore.setState({ S: freshState(), user: null, ready: true })
     useStore.getState().importBackup({ unit: 'kg', workouts: [{ id: 'w1', d: '2026-09-01', entries: [] }], routines: [] })
     expect(useStore.getState().S.accent).toBe('lime')
     useStore.getState().importBackup({ ...freshState(), workouts: [{ id: 'w2', d: '2026-09-02', entries: [] }] })
-    expect(useStore.getState().S.accent).toBe('brand')
+    expect(useStore.getState().S.accent).toBe('violet')
   })
 })
 
 describe('another account on this device', () => {
   afterEach(() => { localStorage.clear(); useStore.setState({ S: clone(DEF), user: null, ready: false }) })
-  it('starts its new profile on the brand green, and the account’s own copy brings its accent', () => {
+  it('starts its new profile on Karma purple, and the account’s own copy brings its accent', () => {
     localStorage.setItem('gym_owner', 'user-1')
     useStore.setState({ S: { ...clone(DEF), accent: 'pink', workouts: [{ id: 'w1', d: '2026-09-01', entries: [] }] }, user: { id: 'user-1' } })
     useStore.getState().setUser({ id: 'user-2', name: 'Two' })
-    expect(useStore.getState().S.accent).toBe('brand')
+    expect(useStore.getState().S.accent).toBe('violet')
     expect(restoredStateFor(useStore.getState().S, { workouts: [{ id: 'w9' }] }).accent).toBe('lime')
   })
 })

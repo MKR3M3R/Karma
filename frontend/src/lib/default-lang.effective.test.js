@@ -18,22 +18,22 @@ describe('effectiveLang', () => {
     expect(effectiveLang(null, null, ['it'])).toBe('en')
     expect(effectiveLang({ lang: '' }, null, [])).toBe('en')
   })
-  it('gives an unpicked copy the instance default, then the browser\'s language', () => {
+  it('gives an unpicked copy the instance default, then Karma\'s pt-BR default', () => {
     expect(effectiveLang(auto, { default_lang: 'fr' }, ['it'])).toBe('fr')
-    expect(effectiveLang(auto, { default_lang: '' }, ['it-IT'])).toBe('it')
-    expect(effectiveLang(auto, { default_lang: '' }, ['nl'])).toBe('en')
+    expect(effectiveLang(auto, { default_lang: '' }, ['it-IT'])).toBe('pt-BR')
+    expect(effectiveLang(auto, { default_lang: '' }, ['nl'])).toBe('pt-BR')
   })
   it('before the config is in, uses the default this device saw last', () => {
     rememberDefaultLang({ default_lang: 'fr' })
     expect(effectiveLang(auto, null, ['it'])).toBe('fr')
   })
-  it('reads a remembered "no default" as no default, not as unknown', () => {
+  it('keeps the product default when the remembered instance has no override', () => {
     rememberDefaultLang({})
     expect(localStorage.getItem('gym_default_lang')).toBe('')
-    expect(effectiveLang(auto, null, ['it'])).toBe('it')
+    expect(effectiveLang(auto, null, ['it'])).toBe('pt-BR')
   })
   it('with nothing seen yet, shows the stored language unchanged until the config answers', () => {
-    expect(effectiveLang({ lang: 'pt', langAuto: true }, null, ['it'])).toBe('pt')
+    expect(effectiveLang({ lang: 'pt-BR', langAuto: true }, null, ['it'])).toBe('pt-BR')
   })
 })
 

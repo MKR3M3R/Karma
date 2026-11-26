@@ -1,0 +1,11 @@
+# Food search sources
+
+The Nutrition food picker searches the profile's own foods and Karma's reference foods locally. After the user submits a name or an 8–14 digit barcode, it also calls `GET /api/nutrition/foods/search?q=…`. Results are normalized to nutrients per 100 g and retain the source name, brand and barcode when available, so the diary does not present community or database values as verified label data. Results can be added directly to a meal or copied into the personal food form for review and editing.
+
+The API searches USDA FoodData Central when `USDA_API_KEY` is set and Open Food Facts for product data. The USDA key is sent only from the API process to USDA. Without a key, Open Food Facts remains available. If either provider fails, usable results from the other provider remain available and manual entry continues to work.
+
+Configure USDA on the server with `USDA_API_KEY` (see `.env.example`). Do not put the key in frontend configuration. Obtain one through [data.gov](https://api.data.gov/signup/). FoodData Central requires the key on each API call and asks users to identify it as the data source. Its data are CC0/public domain.
+
+Open Food Facts results are attributed in the picker. Its database is under ODbL and its individual contents under the Database Contents License; users of this feature should review the [official API usage and reuse terms](https://openfoodfacts.github.io/openfoodfacts-server/api/) before operating a public deployment. The integration identifies Karma with a custom User-Agent and throttles requests to stay below the documented 10-search-requests-per-minute limit. The UI submits external searches on Enter or the Search button, never for every keystroke.
+
+External values are community or database records and may be incomplete or inaccurate. Products with no usable energy, protein, carbohydrate, or fat value are omitted; a missing fiber value is shown as unavailable rather than treated as zero. Values use the provider's per-100-g data. The picker does not convert mass and volume or infer household measures. The user can still add and edit food manually, and existing profile data are unchanged. The offline Android flavor remains independent of these network services; its local catalog and manual entry still work.

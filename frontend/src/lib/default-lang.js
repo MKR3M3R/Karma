@@ -7,11 +7,11 @@
 // they are — including every existing profile whose `lang` is the old default.
 //
 // For a marked copy, the instance's DEFAULT_LANG (GET /api/config `default_lang`) comes first,
-// then the first of the browser's languages this app speaks, then English.
+// then Karma's product default, Brazilian Portuguese. A language explicitly selected in Settings
+// clears the mark and remains unchanged on later launches or updates.
 //
 // That answer is worked out where the language is used (effectiveLang) and never written back
-// into the state. It depends on the device — two phones of one profile can have browsers in two
-// languages — and the state is synced: a derived language stored in it would be pushed by one
+// into the state. The state is synced: a derived language stored in it would be pushed by one
 // device, pulled by the other, re-derived there and pushed back, round after round. `lang` is
 // only written when someone picks one in Settings, which also clears the mark.
 import { LANGS } from './i18n-core.js'
@@ -33,11 +33,10 @@ export function matchLocale(tag) {
 }
 
 /** The language a copy that never chose one should be in, or null for a copy that chose. */
-export function autoLang(S, config, navLangs = []) {
+export function autoLang(S, config) {
   if (!S || S.langAuto !== true) return null
   return matchLocale(config?.default_lang)
-    || (navLangs || []).map(matchLocale).find(Boolean)
-    || 'en'
+    || 'pt-BR'
 }
 
 // The instance's DEFAULT_LANG as last seen on this device, so a boot does not show the browser's

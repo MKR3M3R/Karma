@@ -52,6 +52,7 @@ import { dashboardRoutes } from './trainers/dashboard-routes.js';
 import { createNotify } from './trainers/notify.js';
 import { OrgError } from './trainers/org-store.js';
 import { nutritionSourceFrom } from './sources/nutrition.js';
+import { searchExternalFoods } from './food-search.js';
 import { createPermissions } from './permissions.js';
 import { createShareLog } from './share-log.js';
 import { createToken, findToken, touchToken, listTokens, revokeTokens, scopedState, mergeScoped, readCategories, ScopeError, TOKEN_CATEGORIES, TOKEN_DAYS, DEFAULT_DAYS, TOKEN_PREFIX } from './tokens.js';
@@ -120,13 +121,13 @@ let oidcApi = null;   // the routes and helpers, made once everything they need 
 // The language the sign-in screen, and every profile that never picked one, starts in (#303) —
 // for an instance whose people share a language. Only a tag's shape is checked here; the app
 // matches it against the languages it has and ignores one it does not know. Unset, it is left
-// out of /api/config and the app behaves as before.
+// out of /api/config and Brazilian Portuguese is the product default.
 const DEFAULT_LANG = (() => {
   const v = String(process.env.DEFAULT_LANG || '').trim();
-  if (!v) return '';
+  if (!v) return 'pt-BR';
   if (/^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/.test(v)) return v;
   console.warn(`DEFAULT_LANG "${v.slice(0, 40)}" is not a language tag such as pt-BR or de — ignored`);
-  return '';
+  return 'pt-BR';
 })();
 // Whether the address a request came from may be read from the headers a proxy sets. Only the
 // sign-in throttle asks (limitAddress below); the bundled compose file sets it, because the API
@@ -1197,13 +1198,17 @@ if (AUDIT_ON) {
 // the whole instance: one client can pause *password* sign-in for everybody for a while, and the
 // per-name pause is what still protects each password.
 const AUTH_BURST = createWindow({ max: 60, windowMs: 60000 });
+const FOOD_SEARCH_BURST = createWindow({ max: 8, windowMs: 60000 });
+// FoodData Central's documented default quota is 1,000 requests/hour per source IP. Keep room
+// for other server activity and share one budget across public search callers on this process.
+const USDA_SEARCH_BUDGET = createWindow({ max: 900, windowMs: 60 * 60_000 });
 const ADDR_FAILS = createBackoff({ free: 20, baseMs: 30000, maxMs: 15 * 60000, forgetMs: 3600000 });
 const ACCOUNT_FAILS = createBackoff({
   free: 5, baseMs: 60000, maxMs: 3600000, forgetMs: 24 * 3600000,
   // At most one per profile with a password, so this cannot grow without bound.
   keep: k => k.startsWith('acct:') && hasPassword(db.users.find(u => u.id === k.slice(5)))
 });
-setInterval(() => { AUTH_BURST.sweep(); ADDR_FAILS.sweep(); ACCOUNT_FAILS.sweep(); }, 60000).unref();
+setInterval(() => { AUTH_BURST.sweep(); FOOD_SEARCH_BURST.sweep(); USDA_SEARCH_BUDGET.sweep(); ADDR_FAILS.sweep(); ACCOUNT_FAILS.sweep(); }, 60000).unref();
 
 // Route -> the kind of failure it can count. Every route listed here also spends the burst
 // budget; `null` spends only that.
@@ -2546,6 +2551,20 @@ const routes = {
   'GET /api/health': async (req, res) => {
     if (!dataWritable()) return json(res, 503, { ok: false, writable: false });
     json(res, 200, { ok: true, users: db.users.length, writable: true });
+  },
+
+  // Public, read-only food lookup. USDA credentials stay in this process and are never returned
+  // to the browser. Open Food Facts remains available when USDA_API_KEY is not configured.
+  'GET /api/nutrition/foods/search': async (req, res) => {
+    const wait = FOOD_SEARCH_BURST.take(limitAddress(req));
+    if (wait) return tooMany(res, wait);
+    const q = new URL(req.url, 'http://x').searchParams.get('q') || '';
+    if (q.trim().length < 2) return json(res, 200, { foods: [], available: { usda: !!process.env.USDA_API_KEY, openFoodFacts: true } });
+    const key = process.env.USDA_API_KEY || '';
+    const usdaAllowed = !key || !USDA_SEARCH_BUDGET.take('all');
+    const result = await searchExternalFoods(q, { usdaKey: usdaAllowed ? key : '' });
+    if (!usdaAllowed) { result.available.usda = true; result.partial = true; }
+    json(res, 200, result);
   },
 
   // Public config the login screen needs before anyone is signed in. `coach` is absent unless

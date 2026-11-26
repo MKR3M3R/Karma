@@ -58,6 +58,13 @@ describe('foods', () => {
 })
 
 describe('items and macros', () => {
+  it('keeps external source and barcode provenance and recalculates a 150 g amount', () => {
+    const food = { ...rice, source: 'Open Food Facts', barcode: '5901234123457', fiber: 1.2 }
+    expect(readFood(food)).toMatchObject({ source: 'Open Food Facts', barcode: '5901234123457' })
+    const item = itemFromFood(food, 150)
+    expect(macrosOf(item)).toEqual({ kcal: 195, p: 4.1, c: 42, f: 0.5, fiber: 1.8 })
+    expect(readItem(item)).toMatchObject({ source: 'Open Food Facts', barcode: '5901234123457' })
+  })
   it('scales by amount and keeps its own copy of the figures', () => {
     const item = itemFromFood({ ...rice, id: 'a' }, 200)
     expect(item).toMatchObject({ name: 'Rice', amt: 200, foodId: 'a' })

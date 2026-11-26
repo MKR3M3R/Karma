@@ -24,7 +24,7 @@ import { ACCENTS, ACCENT_INK } from './format.js'
 //   is laid over useStore's DEF, whose accent is this, so a profile that never picked one keeps the
 //   iOS green it always had and nothing changes under anyone on an update (accent.migration.test.js).
 //   An older app reading 'brand' does not know it and draws its own default, this same green.
-export const NEW_ACCENT = 'brand'
+export const NEW_ACCENT = 'violet'
 export const DEFAULT_ACCENT = 'lime'
 export const CUSTOM = 'custom'
 
