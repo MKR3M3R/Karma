@@ -54,6 +54,10 @@ export function readFood(raw) {
   if (fiber != null && fiber <= c + 0.5) out.fiber = fiber
   const brand = text(raw.brand, 60)
   if (brand) out.brand = brand
+  const source = text(raw.source, 80)
+  if (source) out.source = source
+  const barcode = text(raw.barcode, 32)
+  if (/^\d{8,14}$/.test(barcode)) out.barcode = barcode
   return out
 }
 
@@ -111,7 +115,7 @@ const perOf = f => {
 export function itemFromFood(food, amt, lang = 'en') {
   const a = num(amt, MAX_AMT)
   if (!food || !a || a <= 0) return null
-  return { name: foodName(food, lang), base: food.base, amt: a, per: perOf(food), ...(food.id ? { foodId: food.id } : {}) }
+  return { name: foodName(food, lang), base: food.base, amt: a, per: perOf(food), ...(food.id ? { foodId: food.id } : {}), ...(food.source ? { source: food.source } : {}), ...(food.barcode ? { barcode: food.barcode } : {}) }
 }
 
 /** One item read back, or null. */
@@ -126,6 +130,10 @@ export function readItem(raw) {
   const fiber = per && num(per.fiber, 100)
   if (fiber != null) out.per.fiber = fiber
   if (typeof raw.foodId === 'string' && raw.foodId.length <= 60) out.foodId = raw.foodId
+  const source = text(raw.source, 80)
+  if (source) out.source = source
+  const barcode = text(raw.barcode, 32)
+  if (/^\d{8,14}$/.test(barcode)) out.barcode = barcode
   return out
 }
 

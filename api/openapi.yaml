@@ -221,6 +221,63 @@ security:
   - bearerAuth: []
 
 paths:
+  /api/nutrition/foods/search:
+    get:
+      tags: [meta]
+      operationId: searchNutritionFoods
+      summary: Search public nutrition databases
+      description: |
+        Public, read-only lookup in Open Food Facts and, when `USDA_API_KEY` is configured,
+        USDA FoodData Central. The USDA key stays on the server. Search is intended for an
+        explicit user submission; the server rate limits callers. Results contain macros per
+        100 g and identify their source. Some products omit fiber or are rejected when core
+        macros are missing. `partial` reports unavailable providers or throttling.
+      security: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 80
+          description: Food name or an 8–14 digit barcode.
+      responses:
+        '200':
+          description: Matching foods and provider availability.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [foods, available]
+                properties:
+                  foods:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, src, source, name, base, kcal, p, c, f]
+                      properties:
+                        id: { type: string }
+                        src: { type: string, const: external }
+                        source: { type: string }
+                        name: { type: string }
+                        brand: { type: string }
+                        barcode: { type: string }
+                        base: { type: string, const: g }
+                        kcal: { type: number }
+                        p: { type: number, description: Protein in grams per 100 g. }
+                        c: { type: number, description: Carbohydrates in grams per 100 g. }
+                        f: { type: number, description: Fat in grams per 100 g. }
+                        fiber: { type: number, description: Fiber in grams per 100 g when supplied by the provider. }
+                  available:
+                    type: object
+                    required: [usda, openFoodFacts]
+                    properties:
+                      usda: { type: boolean }
+                      openFoodFacts: { type: boolean }
+                  partial:
+                    type: boolean
+                    description: Present when one or more providers failed or were throttled.
   /api/health:
     get:
       tags: [meta]
@@ -275,7 +332,7 @@ paths:
         The flags the login screen needs before anyone is signed in. Both reflect
         environment variables on the server (`INVITE_ONLY`, `ALLOW_GUEST`), and so does
         `password_login`, which is there only when `PASSWORD_LOGIN=1`, and `default_lang`,
-        which is there only when `DEFAULT_LANG` is set.
+        which is the configured `DEFAULT_LANG` or `pt-BR` when unset.
 
         `media` is there unless the instance runs with `MEDIA_UPLOADS=0`, for everybody: the
         caps are not a secret, and its absence is how the app knows this server does not
@@ -353,8 +410,8 @@ paths:
                     type: string
                     example: pt-BR
                     description: >-
-                      Present only when the instance runs with DEFAULT_LANG set: the
-                      language tag the sign-in screen, and every profile that has never
+                      The configured DEFAULT_LANG or pt-BR by default: the language tag
+                      the sign-in screen, and every profile that has never
                       picked a language in Settings, starts in. A profile's own choice
                       always wins; a tag the app has no translation for is ignored.
                   media:

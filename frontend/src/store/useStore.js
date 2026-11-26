@@ -27,7 +27,6 @@ import { takeOidcReturn } from '../lib/oidc.js'
 import { loadCfAccess } from '../lib/cf-access.js'
 import { loadCoachDevice, saveCoachDevice, coachDeviceSettings } from '../lib/coach-device.js'
 import { initCoachSchedule } from '../lib/coach-schedule.js'
-import { RTL_LANGS } from '../lib/i18n-core.js'
 import { DEFAULT_TEMPLATE_ID } from '../lib/structuralBalanceTemplates.js'
 
 import { WC_DEFAULT } from '../lib/workout-controls.js'
@@ -94,7 +93,7 @@ export const DEF = {
   unit: 'kg', restSec: 90, restPauseSec: 15, sound: true, soundOnSilent: false, vibrateOnSilent: false, timerFlash: false, timedSetOvertime: false, keepAwake: true, lang: 'en',
   // accent: the old iOS green on purpose. A loaded copy that never picked one (saved before accents,
   // a server document, a backup) keeps the green it always had; a new profile starts on the
-  // brand's green instead (freshState, lib/accent.js NEW_ACCENT).
+  // Karma's purple instead (freshState, lib/accent.js NEW_ACCENT).
   theme: 'dark', accent: 'lime', body: 'male', targetW: null,
   // The weekly-rate corridor on the body-weight card (#759, lib/bodyweight.js rateCorridor).
   rateGoal: null,
@@ -325,20 +324,12 @@ export function draftOf(prev) {
   }
 }
 
-// First run on a device whose language renders right-to-left starts in that language
-// rather than English; the boot script in index.html mirrors this check for the
-// pre-paint direction. The choice is persisted like any other setting once the user
-// picks a language.
-const detectedLang = () => {
-  try {
-    const base = (navigator.language || '').toLowerCase().split('-')[0]
-    if (RTL_LANGS.has(base)) return base
-  } catch (e) { /* ignore */ }
-  return 'en'
-}
+// A new profile starts in Brazilian Portuguese; a saved language choice is preserved by loadState.
+// The index.html boot script uses the same default before the app's first paint.
+const detectedLang = () => 'pt-BR'
 
 // A copy started from nothing on this device. `langAuto` marks its language as one nobody has
-// picked yet, so the instance's DEFAULT_LANG or the browser's language may set it
+// picked yet, so the instance's DEFAULT_LANG or Karma's pt-BR default may set it
 // (lib/default-lang.js, #303); picking one in Settings clears it. DEF does not carry the mark:
 // merged under a saved copy it would claim that every existing profile never chose.
 export function freshState() {
@@ -352,7 +343,7 @@ export function freshState() {
   // The streak's freeze rule is asked once on Home (components/StreakRule.jsx). Only the ask is
   // set here, not a rule: a profile without S.streakRule counts as it always did (lib/streak-rule.js).
   s.streakRuleAsk = true
-  // The brand's green (1.4.5). DEF stays on the old green, so only a copy made here gets this.
+  // Karma's purple. DEF stays on the old green, so existing copies keep their current accent.
   s.accent = NEW_ACCENT
   return s
 }

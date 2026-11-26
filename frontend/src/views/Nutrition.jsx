@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -8,6 +8,7 @@ import { uid, todayISO, fmtDate } from '../lib/format.js'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
 import { foodName, REFERENCE_FOODS } from '../lib/nutrition-foods.js'
+import { api } from '../lib/api.js'
 import {
   SLOTS, GOALS, DIETS, foodsOf, withFood, foodProblem, searchFoods, itemFromFood, macrosOf, sumMacros,
   mealsOf, withMeal, dayOf, waterOf, addWater, profileOf, dayProgress, nutritionDays, nutritionAverages,
@@ -29,7 +30,7 @@ const lang = () => getLang()
 
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10) }
 const baseLabel = b => (b === 'ml' ? nt('ml') : 'g')
-const macroLine = m => `${m.kcal} ${nt('kcal')} · P ${m.p} · C ${m.c} · F ${m.f}`
+const macroLine = m => `${m.kcal} ${nt('kcal')} · P ${m.p} · C ${m.c} · F ${m.f}${m.fiber != null ? ' · ' + nt('fiberShort', m.fiber) : ''}`
 const num = s => { const n = Number(String(s).replace(',', '.')); return String(s).trim() === '' || !Number.isFinite(n) ? NaN : n }
 
 function Chip({ on, onClick, children }) {
@@ -49,15 +50,38 @@ async function saveText(text, name, type) {
 function FoodPicker({ onPick, close }) {
   const S = useStore(s => s.S)
   const [q, setQ] = useState('')
+  const [submitted, setSubmitted] = useState('')
+  const [searchSeq, setSearchSeq] = useState(0)
   const [food, setFood] = useState(null)
+  const [remote, setRemote] = useState([])
+  const [remoteFor, setRemoteFor] = useState('')
+  const [looking, setLooking] = useState(false)
+  const [partial, setPartial] = useState(false)
   const [amt, setAmt] = useState(100)
   const prof = profileOf(S)
-  const list = useMemo(() => searchFoods(S, q, lang()).slice(0, 60), [S.nutritionFoods, q])
+  const local = useMemo(() => searchFoods(S, q, lang()).slice(0, 60), [S.nutritionFoods, q])
+  useEffect(() => {
+    let active = true
+    setRemote([])
+    if (submitted.trim().length < 2) { setLooking(false); return () => { active = false } }
+    setLooking(true)
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api('/api/nutrition/foods/search?q=' + encodeURIComponent(submitted.trim()))
+        if (active) { setRemote(Array.isArray(result.foods) ? result.foods : []); setRemoteFor(submitted.trim()); setPartial(!!result.partial) }
+      } catch { if (active) { setRemote([]); setPartial(true) } }
+      finally { if (active) setLooking(false) }
+    }, 300)
+    return () => { active = false; clearTimeout(timer) }
+  }, [submitted, searchSeq])
+  const list = [...local, ...(remoteFor.toLocaleLowerCase() === q.trim().toLocaleLowerCase() ? remote : [])]
+  const submitSearch = () => { setSubmitted(q); setSearchSeq(n => n + 1) }
   if (food) {
     const item = itemFromFood(food, amt, lang())
     return <>
       <h3>{foodName(food, lang())}</h3>
       <div className="muted small">{macroLine(food)} · {nt('per100', baseLabel(food.base))}</div>
+      {food.src === 'external' && <div className="muted small" style={{ marginTop: 4 }}>{food.source}{food.brand ? ' · ' + food.brand : ''}{food.barcode ? ' · ' + nt('barcode') + ': ' + food.barcode : ''}{food.fiber == null ? ' · ' + nt('fiberUnavailable') : ''}</div>}
       {avoidHit(prof, food, lang()) && <div className="small" role="note" style={{ marginTop: 6 }}>{nt('avoidFlag')}</div>}
       <div className="small muted" style={{ margin: '14px 0 6px' }}>{nt('amount')} ({food.base === 'ml' ? nt('unitMl') : nt('unitG')})</div>
       <Stepper value={amt} min={1} max={5000} step={10} decimal={false} unit={baseLabel(food.base)} ariaLabel={nt('amount')} onChange={setAmt} />
@@ -70,13 +94,18 @@ function FoodPicker({ onPick, close }) {
   }
   return <>
     <h3>{nt('addFood')}</h3>
-    <TextField value={q} onChange={e => setQ(e.target.value)} placeholder={nt('search')} aria-label={nt('search')} />
+    <div className="row" style={{ gap: 8 }}>
+      <TextField value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitSearch() }} placeholder={nt('search')} aria-label={nt('search')} />
+      <Button variant="ghost" disabled={q.trim().length < 2 || looking} onClick={submitSearch}>{nt('searchButton')}</Button>
+    </div>
     <div className="list" style={{ marginTop: 10 }}>{list.map(f => <div key={f.id} className="item" {...tappable(() => { setFood(f); setAmt(f.base === 'ml' ? 100 : 100) })}>
       <div className="grow"><div className="tt">{foodName(f, lang())}</div>
-        <div className="ss">{f.src === 'user' ? nt('yours') : nt('reference')} · {f.kcal} {nt('kcal')} {nt('per100', baseLabel(f.base))}{avoidHit(prof, f, lang()) ? ' · ' + nt('avoidFlag') : ''}</div></div>
+      <div className="ss">{f.src === 'user' ? nt('yours') : f.src === 'external' ? f.source : nt('reference')} · {f.kcal} {nt('kcal')} {nt('per100', baseLabel(f.base))}{avoidHit(prof, f, lang()) ? ' · ' + nt('avoidFlag') : ''}</div></div>
       <Icon name="chevronRight" />
     </div>)}</div>
-    {!list.length && <div className="empty small">{nt('search')}: 0</div>}
+    {looking && <div className="muted small" role="status" style={{ padding: 10 }}>{nt('lookingUp')}</div>}
+    {partial && remoteFor.toLocaleLowerCase() === q.trim().toLocaleLowerCase() && <div className="muted small" role="status" style={{ padding: 8 }}>{nt('someSourcesUnavailable')}</div>}
+    {!list.length && !looking && <div className="empty small">{nt('noFoodResults')}</div>}
   </>
 }
 const pickFood = onPick => ui().openSheet(close => <FoodPicker onPick={onPick} close={close} />)
@@ -89,13 +118,39 @@ function FoodSheet({ id = null, close }) {
     name: had?.name || '', brand: had?.brand || '', base: had?.base || 'g',
     kcal: had ? String(had.kcal) : '', p: had ? String(had.p) : '', c: had ? String(had.c) : '', f: had ? String(had.f) : '', fiber: had?.fiber != null ? String(had.fiber) : '',
   }))
+  const [lookup, setLookup] = useState(had?.name || '')
+  const [lookupFor, setLookupFor] = useState('')
+  const [lookupSubmitted, setLookupSubmitted] = useState('')
+  const [lookupSeq, setLookupSeq] = useState(0)
+  const [lookupResults, setLookupResults] = useState([])
+  const [lookupPartial, setLookupPartial] = useState(false)
+  const [looking, setLooking] = useState(false)
+  const [source, setSource] = useState(had?.source || '')
+  const [barcode, setBarcode] = useState(had?.barcode || '')
+  useEffect(() => {
+    let active = true
+    setLookupResults([])
+    if (lookupSubmitted.trim().length < 2) { setLooking(false); return () => { active = false } }
+    setLooking(true)
+    api('/api/nutrition/foods/search?q=' + encodeURIComponent(lookupSubmitted.trim()))
+      .then(result => { if (active) { setLookupResults(Array.isArray(result.foods) ? result.foods : []); setLookupFor(lookupSubmitted.trim()); setLookupPartial(!!result.partial) } })
+      .catch(() => { if (active) { setLookupResults([]); setLookupFor(lookupSubmitted.trim()); setLookupPartial(true) } })
+      .finally(() => { if (active) setLooking(false) })
+    return () => { active = false }
+  }, [lookupSubmitted, lookupSeq])
+  const submitLookup = () => { setLookupSubmitted(lookup); setLookupSeq(n => n + 1) }
+  const selectLookup = food => {
+    setF({ name: food.name, brand: food.brand || '', base: food.base || 'g', kcal: String(food.kcal), p: String(food.p), c: String(food.c), f: String(food.f), fiber: food.fiber != null ? String(food.fiber) : '' })
+    setSource(food.source || ''); setBarcode(food.barcode || '')
+  }
   const [err, setErr] = useState('')
   const set = k => e => setF(x => ({ ...x, [k]: e.target.value }))
   const save = () => {
-    const food = { name: f.name, brand: f.brand, base: f.base, kcal: num(f.kcal), p: num(f.p), c: num(f.c), f: num(f.f), fiber: f.fiber.trim() ? num(f.fiber) : undefined }
+    const food = { name: f.name, brand: f.brand, base: f.base, kcal: num(f.kcal), p: num(f.p), c: num(f.c), f: num(f.f), fiber: f.fiber.trim() ? num(f.fiber) : undefined, source, barcode }
     const problem = foodProblem(food)
     if (problem) { setErr(nt(problem === 'name' ? 'errName' : problem === 'numbers' ? 'errNumbers' : 'errTooMuch')); return }
-    update(s => { s.nutritionFoods = withFood(s.nutritionFoods, id || uid(), food) })
+    const duplicate = !id && foodsOf(S).find(x => x.name.trim().toLocaleLowerCase() === f.name.trim().toLocaleLowerCase() && (x.brand || '').trim().toLocaleLowerCase() === f.brand.trim().toLocaleLowerCase())
+    update(s => { s.nutritionFoods = withFood(s.nutritionFoods, id || duplicate?.id || uid(), food) })
     close(); ui().toast(nt('saved'))
   }
   const remove = () => confirmSheet({
@@ -106,8 +161,19 @@ function FoodSheet({ id = null, close }) {
     <TextField value={f[k]} inputMode={mode} onChange={set(k)} aria-label={label} /></label>
   return <>
     <h3>{had ? nt('editFood') : nt('newFood')}</h3>
+    {!had && <>
+      <div className="row" style={{ gap: 8 }}>
+        <TextField value={lookup} onChange={e => setLookup(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitLookup() }} placeholder={nt('search')} aria-label={nt('search')} />
+        <Button variant="ghost" disabled={lookup.trim().length < 2 || looking} onClick={submitLookup}>{nt('searchButton')}</Button>
+      </div>
+      {looking && <div className="muted small" role="status" style={{ padding: 8 }}>{nt('lookingUp')}</div>}
+      {lookupResults.length > 0 && lookupFor.toLocaleLowerCase() === lookup.trim().toLocaleLowerCase() && <div className="list" style={{ margin: '8px 0' }}>{lookupResults.map(result => <div key={result.id} className="item" {...tappable(() => selectLookup(result))}><div className="grow"><div className="tt">{result.name}</div><div className="ss">{result.source}{result.brand ? ' · ' + result.brand : ''}</div></div><Icon name="chevronRight" /></div>)}</div>}
+      {lookupPartial && lookupFor.toLocaleLowerCase() === lookup.trim().toLocaleLowerCase() && <div className="muted small" role="status">{nt('someSourcesUnavailable')}</div>}
+      {!looking && lookupFor.toLocaleLowerCase() === lookup.trim().toLocaleLowerCase() && !lookupResults.length && !lookupPartial && <div className="muted small">{nt('noFoodResults')}</div>}
+    </>}
     <label className="small muted" style={{ display: 'block' }}>{nt('foodName')}<TextField value={f.name} maxLength={80} onChange={set('name')} aria-label={nt('foodName')} /></label>
     <label className="small muted" style={{ display: 'block', marginTop: 10 }}>{nt('brand')}<TextField value={f.brand} maxLength={60} onChange={set('brand')} aria-label={nt('brand')} /></label>
+    {source && <div className="muted small" style={{ marginTop: 8 }}>{nt('dataSource')}: {source}{barcode ? ' · ' + nt('barcode') + ': ' + barcode : ''}</div>}
     <div className="small muted" style={{ margin: '12px 0 6px' }}>{nt('baseUnit')}</div>
     <Segmented value={f.base} onChange={base => setF(x => ({ ...x, base }))} options={[{ value: 'g', label: 'g' }, { value: 'ml', label: nt('ml') }]} />
     {field('kcal', nt('kcal'), 'numeric')}{field('p', nt('protein') + ' (g)')}{field('c', nt('carbs') + ' (g)')}{field('f', nt('fat') + ' (g)')}{field('fiber', nt('fiber') + ' (g)')}
@@ -132,7 +198,7 @@ function FoodsTab() {
     <Section title={nt('yourFoods')}>
       {mine.length === 0 && <div className="muted small" style={{ padding: '10px 14px' }}>{nt('yourFoodsEmpty')}</div>}
       {mine.filter(f => !q || searchFoods(S, q, lang()).some(x => x.id === f.id)).map(f => <Row key={f.id} title={f.name + (f.brand ? ' · ' + f.brand : '')}
-        subtitle={`${nt('yours')} · ${f.kcal} ${nt('kcal')} ${nt('per100', baseLabel(f.base))}`} accessory="chevron" onClick={() => foodSheet(f.id)} />)}
+        subtitle={`${nt('yours')} · ${f.kcal} ${nt('kcal')} ${nt('per100', baseLabel(f.base))}${f.source ? ' · ' + f.source : ''}`} accessory="chevron" onClick={() => foodSheet(f.id)} />)}
       <Row icon="plus" title={nt('newFood')} onClick={() => foodSheet()} />
     </Section>
     <Section title={nt('referenceFoods')} footer={nt('refNotice')}>
@@ -253,7 +319,7 @@ function TodayTab() {
       const meals = day.meals.filter(m => m.slot === slot)
       const items = meals.flatMap(m => m.items.map((it, i) => ({ it, i, id: m.id })))
       return <Section key={slot} title={nt('slot_' + slot) + (items.length ? ' · ' + sumMacros(items.map(x => x.it)).kcal + ' ' + nt('kcal') : '')}>
-        {items.map(({ it, i, id }) => <Row key={id + i} title={it.name} subtitle={`${it.amt} ${baseLabel(it.base)} · ${macroLine(macrosOf(it))}`}
+        {items.map(({ it, i, id }) => <Row key={id + i} title={it.name} subtitle={`${it.amt} ${baseLabel(it.base)} · ${macroLine(macrosOf(it))}${it.source ? ' · ' + it.source : ''}${it.barcode ? ' · ' + nt('barcode') + ': ' + it.barcode : ''}`}
           accessory="chevron" onClick={() => ui().openSheet(close => <ItemSheet mealId={id} index={i} close={close} />)} />)}
         <Row icon="plus" title={nt('addFood')} onClick={() => pickFood(item => addItem(slot, item))} />
       </Section>
