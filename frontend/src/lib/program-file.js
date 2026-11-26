@@ -288,3 +288,22 @@ export function buildProgramFile(routines, nameOf, { name = '' } = {}) {
   }))
   return JSON.stringify({ schema_version: PROGRAM_VERSION, type: PROGRAM_TYPE, program: { name, days } }, null, 2)
 }
+
+const csvCell = v => {
+  const s = String(v ?? '')
+  return /[",;\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+}
+export const PROGRAM_CSV_HEADER = ['Day', 'Exercise', 'Sets', 'Reps', 'Rest', 'Load', 'Notes', 'Superset', 'Seconds']
+
+/**
+ * The same routines as a CSV, one row per exercise, in the columns csvColumns reads back, so a
+ * file written here imports here (and opens in a spreadsheet). Empty cells stay empty.
+ */
+export function buildProgramCSV(routines, nameOf) {
+  const file = JSON.parse(buildProgramFile(routines, nameOf))
+  const rows = [PROGRAM_CSV_HEADER]
+  for (const day of file.program.days) for (const e of day.exercises) {
+    rows.push([day.name, e.name, e.sets, e.reps, e.rest_seconds, e.load, e.notes, e.superset_group, e.duration_seconds])
+  }
+  return rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n'
+}
