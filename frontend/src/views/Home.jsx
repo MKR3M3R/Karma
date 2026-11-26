@@ -38,6 +38,7 @@ import { FastingLine } from '../components/SisterApps.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { isOn } from '../lib/modules.js'
 import KarmaToday from '../components/KarmaToday.jsx'
+import StartHere from '../components/StartHere.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -298,6 +299,7 @@ export default function Home() {
       </>}
     </div>}
 
+    <StartHere />
     <KarmaToday />
 
     {/* The streak opens its calendar from its text (CardHead open); the weekly-sets line and the
