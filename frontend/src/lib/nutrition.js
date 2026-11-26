@@ -348,3 +348,22 @@ export function nutritionCSV(S) {
   }
   return rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n'
 }
+
+/* ------------------------------------------------------------- misc ---- */
+
+/** Whether a food's name or brand contains one of the profile's "avoid" words (accents and case ignored). */
+export function avoidHit(profile, food, lang = 'en') {
+  const words = (profile?.avoid || []).map(fold).filter(Boolean)
+  if (!words.length) return false
+  const hay = fold(foodName(food, lang)) + ' ' + fold(food.names?.en) + ' ' + fold(food.names?.pt) + ' ' + fold(food.brand)
+  return words.some(w => hay.includes(w))
+}
+
+/** What clearing all nutrition data sets: every record becomes a stamped empty entry (so it stays deleted on other devices), the profile empties. */
+export function clearedNutrition(S, now = Date.now()) {
+  const wipe = map => Object.fromEntries(Object.keys(isMap(map) ? map : {}).map(k => [k, { _ts: now }]))
+  return {
+    nutritionFoods: wipe(S?.nutritionFoods), nutritionMeals: wipe(S?.nutritionMeals),
+    nutritionWater: wipe(S?.nutritionWater), nutritionPlans: wipe(S?.nutritionPlans), nutritionProfile: {},
+  }
+}

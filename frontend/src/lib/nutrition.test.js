@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   readFood, foodProblem, foodsOf, withFood, foodById, searchFoods, itemFromFood, readItem, macrosOf, sumMacros,
   readMeal, mealsOf, withMeal, dayOf, waterOf, withWater, addWater, profileOf, dayProgress, nutritionDays, nutritionAverages,
-  readPlan, plansOf, withPlan, planTotals, planToMeals, shoppingList, shoppingText, exportNutrition, nutritionCSV,
+  avoidHit, clearedNutrition, readPlan, plansOf, withPlan, planTotals, planToMeals, shoppingList, shoppingText, exportNutrition, nutritionCSV,
 } from './nutrition.js'
 import { REFERENCE_FOODS } from './nutrition-foods.js'
 
@@ -201,5 +201,25 @@ describe('export', () => {
     const csv = nutritionCSV({ nutritionMeals: withMeal({}, 'm', { d: '2026-11-20', slot: 'lunch', items: [itemOf('Rice, "white"', 100)] }) })
     expect(csv.split('\n')[0]).toBe('date,meal,food,amount,unit,kcal,protein_g,carbs_g,fat_g')
     expect(csv.split('\n')[1]).toBe('2026-11-20,lunch,"Rice, ""white""",100,g,100,10,10,1')
+  })
+})
+
+describe('avoid list and clearing', () => {
+  it('flags a food that contains an avoid word, ignoring accents and language', () => {
+    const prof = { avoid: ['amendoim', 'Leite'] }
+    expect(avoidHit(prof, foodById({}, 'ref-peanuts'), 'en')).toBe(true)
+    expect(avoidHit(prof, foodById({}, 'ref-milk-whole'), 'pt')).toBe(true)
+    expect(avoidHit(prof, foodById({}, 'ref-egg'), 'en')).toBe(false)
+    expect(avoidHit({}, foodById({}, 'ref-egg'), 'en')).toBe(false)
+  })
+  it('clearing stamps every record empty so other devices delete them too', () => {
+    const S = { nutritionFoods: withFood({}, 'a', rice, 1), nutritionMeals: withMeal({}, 'm', { d: '2026-11-20', slot: 'lunch', items: [itemOf('a', 1)] }, 1), nutritionWater: withWater({}, '2026-11-20', 300, 1), nutritionProfile: { kcal: 2000 } }
+    const c = clearedNutrition(S, 50)
+    expect(c.nutritionFoods).toEqual({ a: { _ts: 50 } })
+    expect(c.nutritionMeals).toEqual({ m: { _ts: 50 } })
+    expect(c.nutritionWater).toEqual({ '2026-11-20': { _ts: 50 } })
+    expect(c.nutritionPlans).toEqual({})
+    expect(c.nutritionProfile).toEqual({})
+    expect(mealsOf({ nutritionMeals: c.nutritionMeals })).toEqual([])
   })
 })
